@@ -3,73 +3,87 @@ import numpy as np
 if __name__ == '__main__':
 
     print('Oprindelig matrix:')
-    # A = np.array([
-    #     [-1, 0, 1, 0, -5],
-    #     [0, -2, 0, 1, -5],
-    #     [0, 1, -1, 0, 85]
-    # ])
+    # Til hvis systemet er inkonsistent
     A = np.array([
-        [ 2., 1., 1., 0., 0., 0.,-12.],
-        [-1.,-2., 0., 1., 0., 0., -2.],
-        [ 1.,-3., 0., 0., 1., 0., -1.],
-        [-3.,-2., 0., 0., 0., 1.,  0.]
+        [2., 1., 1., 0., 0., 0., -12.],
+        [-1., -2., 0., 1., 0., 0., -2.],
+        [1., -3., 0., 0., 1., 0., -1.],
+        [-3., -2., 0., 0., 0., 1., 0.]
     ])
-    # A = np.array([
-    #     [ 2.,  1., 1., 0., 0., 0., 0., 0., 12.],
-    #     [-1., -2., 0., 1., 0., 0., 0., 0., -4.],
-    #     [ 1., -3., 0., 0., 1., 0., 0., 0., -1.],
-    #     [-2.,  2., 0., 0., 0., 1., 0., 0.,  9.],
-    #     [ 2.,  2., 0., 0., 0., 0., 1., 0., 17.],
-    #     [-3., -2., 0., 0., 0., 0., 0., 1.,  0.]
-    # ])
-    # A = np.array([
-    #     [-2., 1., 1., 0., 0., 0., 0., 0., 0., -2.],
-    #     [1., 1., 0., 1., 0., 0., 0., 0., 0., 4.],
-    #     [-1., -1., 0., 0., 1., 0., 0., 0., 0., -1.],
-    #     [2., 1., 0., 0., 0., 1., 0., 0., 0., 6.],
-    #     [0., 1., 0., 0., 0., 0., 1., 0., 0., 3.],
-    #     [1., 0., 0., 0., 0., 0., 0., 1., 0., 2.],
-    #     [-1., -1., 0., 0., 0., 0., 0., 0., 1., 0.]
-    # ])
-    def erBasal(A,j,i):
+    # Til hvis systemet er ubegrænset
+    A = np.array([
+        [2., 0., 1., 0., 0., 0., 12.],
+        [-1., 0., 0., 1., 0., 0., -2.],
+        [1., 0., 0., 0., 1., 0., 20.],
+        [-1., -1., 0., 0., 0., 1., 0.]
+    ])
+    # Til eksemplet med simplex
+    A = np.array([
+        [2., 1., 1., 0., 0., 0., 0., 0., 12.],
+        [-1., -2., 0., 1., 0., 0., 0., 0., -4.],
+        [1., -3., 0., 0., 1., 0., 0., 0., -1.],
+        [-2., 2., 0., 0., 0., 1., 0., 0., 9.],
+        [2., 2., 0., 0., 0., 0., 1., 0., 17.],
+        [-3., -2., 0., 0., 0., 0., 0., 1., 0.]
+    ])
+
+    def tilDual(A):
         n, m = len(A[0]), len(A)
-        for x in range(0,m):
-            if x == j: continue
-            if A[x][i] != 0:
+        dualM: int =  n-m
+        dualN: int = m+dualM
+        R = np.zeros((dualM, m-1))
+        for j in range(n-m-1):
+            for i in range(m-1):
+                R[j][i]=A[i][j]*-1
+        for i in range(m-1):
+            R[dualM-1][i] = A[i][n-1]
+        R = np.c_[R, np.identity(dualM),np.zeros(3)]
+        for j in range(n-m-1):
+            R[j][dualN-1] = A[m-1][j]
+        return  R
+    A = tilDual(A)
+
+    def erBasal(A, i, j):  # ser om søjle j er basal
+        n, m = len(A[0]), len(A)
+        for r in range(0, m):
+            if r == i: continue
+            if A[r][j] != 0:
                 return False
         return True
 
 
     def pivotSC(A):
         n, m = len(A[0]), len(A)
-        mindstB, mindstI, mI, mJ = 0, 0, -1, -1
+        mindstB, mindstI, mJ, mI = 0, 0, -1, -1
         for b in range(0, m - 1):
-            temp = A[b][n-1]
+            temp = A[b][n - 1]
             if temp < mindstB:
-                mindstB, mJ = temp, b
-            elif temp == mindstB:            #####
-                for k in range(0,n-1):           #
-                    if erBasal(A,mJ,k):          #
-                        break                    #  Til hvis b værdierne er ens
-                    elif erBasal(A,b,k):         #
-                        mindstB, mJ = temp, b    #
-                        break                #####
-        for i in range(0,n-1):
-            temp = A[mJ][i]
+                mindstB, mI = temp, b
+            elif temp == mindstB:  #####
+                for k in range(0, n - 1):  #
+                    if erBasal(A, mI, k):  #
+                        break  # Til hvis b værdierne er ens
+                    elif erBasal(A, b, k):  #
+                        mindstB, mI = temp, b  #
+                        break  #####
+        for j in range(0, n - 1):
+            temp = A[mI][j]
             if temp < mindstI:
-                mindstI, mI = temp, i
+                mindstI, mJ = temp, j
+                break
 
         if mindstI == 0:
             print('Systemet er inkonsistent')
             exit(41)
-        return 0, mI, mJ
+        return mI, mJ
+
 
     def pivotSted(A):
         n, m = len(A[0]), len(A)
         global fase1
         # Til fase 1
-        for j in range(0, m - 1):
-            if A[j][n - 1] < 0:
+        for i in range(0, m - 1):
+            if A[i][n - 1] < 0:
 
                 if not fase1:
                     print('Fase 1:')
@@ -80,28 +94,28 @@ if __name__ == '__main__':
         if fase1:
             print('Fase 2:')
             fase1 = False
-        ratio, mI, mJ = 99999999999999999999, 0, 0
-        for i in range(0, n - 1):
-            if A[len(A) - 1][i] < 0:
+        ratio, mJ, mI = 99999999999999999999, 0, 0
+        for j in range(0, n - 1):
+            if A[len(A) - 1][j] < 0:
                 ubegranset = True
-                for j in range(0, m - 1):
-                    if A[j, i] > 0:
+                for i in range(0, m - 1):
+                    if A[i, j] > 0:
                         ubegranset = False
-                        temp = ((A[j, n - 1]) / (A[j, i]))
+                        temp = ((A[i, n - 1]) / (A[i, j]))
                         if temp < ratio:
-                            ratio, mI, mJ = temp, i, j
+                            ratio, mJ, mI = temp, j, i
                 if ubegranset:
                     print('Systemet er ubegrænset.')
                     exit(42)
-        return ratio, mI, mJ
+        return mI, mJ
 
 
     def pivot(A, i, j):
-        n, m, e = len(A[0]), len(A), A[j][i]
-        A[j] = A[j] / e
+        n, m, e = len(A[0]), len(A), A[i][j]
+        A[i] = A[i] / e
         for r in range(m):
-            if r == j: continue
-            A[r] = A[r] - A[r][i] * A[j]
+            if r == i: continue
+            A[r] = A[r] - A[r][j] * A[i]
 
 
     def check(A):
@@ -112,17 +126,18 @@ if __name__ == '__main__':
                 return False
         return True
 
+
     fase1 = False
     done = False
-
+    print(A)
+    print('')
     while not done:
-        print(A)
-        print('')
-        ratio, i, j = pivotSted(A)
+        i, j = pivotSted(A)
+        print('Pivoterer ved søjle {:d} og række {:d}'.format(i + 1, j + 1))
         if i == -1 and j == -1:
             print('færdig')
             break
         pivot(A, i, j)
         done = check(A)
-
-    print(A)
+        print(A)
+        print('')
